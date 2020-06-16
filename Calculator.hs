@@ -33,7 +33,7 @@ operation c f = skipWS *> parseIf (== c) *> pure f
 
 -- chain any number of left-associative operations
 -- foldl' (flip ($)) is lifted to act on Parsers
--- then its arguments a parsed integer and a list of functions
+-- then its arguments are parsed: an integer and a list of functions
 -- first, a single val is parsed, then any number of strings " + x"
 -- operand parser passed as a parameter because there is a certain trick, bear with me
 operationsL
@@ -43,7 +43,8 @@ operationsL
 operationsL op val = foldl' (flip ($)) <$> val <*> many (flip <$> op <*> val)
 
 -- same but for right associative operations
--- notice the <**>, it's a semantically a flipped <*>
+-- notice the <**>, it's semantically a flipped <*>
+-- (not the same as flip (<*>)! that would parse right operand first)
 -- this is needed so that val is parsed before op
 operationsR
     :: ExprParser (Integer -> Integer -> Integer)
