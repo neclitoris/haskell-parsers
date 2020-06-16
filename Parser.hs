@@ -1,7 +1,9 @@
 module Parser
     ( Parser(..)
-    , parse
-    , parseIf
+    , consumeChar
+    , parseCharIf
+    , parseChar
+    , parseString
     , parseEOF
     , module Control.Applicative
     , module Control.Monad
@@ -51,14 +53,22 @@ instance MonadPlus m => MonadPlus (Parser m s)
 
 -- consume single character
 -- naming is difficult, don't @ me
-parse :: MonadPlus m => Parser m s s
-parse = Parser $ \str -> maybe empty return $ uncons str
+consumeChar :: MonadPlus m => Parser m s s
+consumeChar = Parser $ \str -> maybe empty return $ uncons str
 
 -- consume character if it satisfies the predicate
-parseIf :: MonadPlus m => (s -> Bool) -> Parser m s s
-parseIf p = Parser $ \str -> case str of
+parseCharIf :: MonadPlus m => (s -> Bool) -> Parser m s s
+parseCharIf p = Parser $ \str -> case str of
     c : str' | p c -> return (c, str')
     _              -> empty
+
+parseChar :: (MonadPlus m, Eq s) => s -> Parser m s s
+parseChar c = parseCharIf (== c)
+
+parseString :: (MonadPlus m, Eq s) => [s] -> Parser m s [s]
+parseString s = Parser $ \str -> case stripPrefix s str of
+    Just r -> return (s, r)
+    _      -> empty
 
 -- assert that there is no more input
 parseEOF :: MonadPlus m => Parser m s ()

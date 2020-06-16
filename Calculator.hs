@@ -13,23 +13,22 @@ stoi :: String -> Integer
 stoi s = foldl' (\acc c -> acc * 10 + (toInteger . digitToInt) c) 0 s
 
 skipWS :: ExprParser ()
-skipWS = void $ many $ parseIf isSpace
+skipWS = void $ many $ parseCharIf isSpace
 
 -- drop whitespaces, negate parse result if '-' is present
--- some (parseIf isDigit) yields a list of one or more digits, see Alternative typeclass
+-- some (parseCharIf isDigit) yields a list of one or more digits, see Alternative typeclass
 number :: ExprParser Integer
 number =
     skipWS
-        *> (   (negate <$ parseIf (== '-') <|> pure id)
-           <*> (stoi <$> some (parseIf isDigit))
+        *> (   (negate <$ parseChar '-' <|> pure id)
+           <*> (stoi <$> some (parseCharIf isDigit))
            )
 
--- operations are single char so far
 operation
-    :: Char
+    :: String
     -> (Integer -> Integer -> Integer)
     -> ExprParser (Integer -> Integer -> Integer)
-operation c f = skipWS *> parseIf (== c) *> pure f
+operation s f = skipWS *> parseString s *> pure f
 
 -- chain any number of left-associative operations
 -- foldl' (flip ($)) is lifted to act on Parsers
@@ -53,12 +52,12 @@ operationsR op val = flip (foldr' ($)) <$> many (val <**> op) <*> val
 
 -- now define the grammar
 atom :: ExprParser Integer
-atom = skipWS *> parseIf (== '(') *> parseExpr <* parseIf (== ')') <|> number
+atom = skipWS *> parseChar '(' *> parseExpr <* parseChar ')' <|> number
 
 -- a bunch of operations are defined and arranged in a list according to their priorities
-additiveOps = operationsL $ operation '+' (+) <|> operation '-' (-)
-multiplicativeOps = operationsL $ operation '*' (*)
-powerOps = operationsR $ operation '^' (^)
+additiveOps = operationsL $ operation "+" (+) <|> operation "-" (-)
+multiplicativeOps = operationsL $ operation "*" (*)
+powerOps = operationsR $ operation "^" (^)
 allOps = [additiveOps, multiplicativeOps, powerOps]
 
 -- this thing expands into (additiveOps $ (multiplicativeOps $ (powerOps $ atom)))
