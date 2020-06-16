@@ -1,4 +1,4 @@
-module Main where
+module Calculator where
 
 import           Parser
 import           System.IO
