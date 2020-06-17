@@ -7,28 +7,28 @@ import           Data.Foldable
 import           System.Environment
 
 -- Not going to use any kind of error reporting
-type ExprParser a = Parser Maybe Char a
+type ExprParser a = ParserC String Maybe Char a
 
 stoi :: String -> Integer
 stoi s = foldl' (\acc c -> acc * 10 + (toInteger . digitToInt) c) 0 s
 
 skipWS :: ExprParser ()
-skipWS = void $ many $ parseCharIf isSpace
+skipWS = void $ many $ symbolIs isSpace
 
 -- drop whitespaces, negate parse result if '-' is present
--- some (parseCharIf isDigit) yields a list of one or more digits, see Alternative typeclass
+-- some (symbolIs isDigit) yields a list of one or more digits, see Alternative typeclass
 number :: ExprParser Integer
 number =
     skipWS
-        *> (   (negate <$ parseChar '-' <|> pure id)
-           <*> (stoi <$> some (parseCharIf isDigit))
+        *> (   (negate <$ symbol '-' <|> pure id)
+           <*> (stoi <$> some (symbolIs isDigit))
            )
 
 operation
     :: String
     -> (Integer -> Integer -> Integer)
     -> ExprParser (Integer -> Integer -> Integer)
-operation s f = skipWS *> parseString s *> pure f
+operation s f = skipWS *> string s *> pure f
 
 -- chain any number of left-associative operations
 -- foldl' (flip ($)) is lifted to act on Parsers
@@ -53,7 +53,7 @@ operationsR op val = flip (foldr' ($)) <$> many (val <**> op) <*> val
 
 -- now define the grammar
 atom :: ExprParser Integer
-atom = skipWS *> parseChar '(' *> parseExpr <* parseChar ')' <|> number
+atom = skipWS *> symbol '(' *> parseExpr <* symbol ')' <|> number
 
 -- a bunch of operations are defined and arranged in a list according to their priorities
 additiveOps = operationsL $ operation "+" (+) <|> operation "-" (-)
@@ -69,5 +69,5 @@ parseExpr = foldr' ($) atom allOps
 main :: IO ()
 main = do
     (str : _) <- getArgs
-    let Just (res, "") = runParser (parseExpr <* skipWS <* parseEOF) str
+    let Just (res, "") = runParserC (parseExpr <* skipWS <* pEOF) str
     print res
