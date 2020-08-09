@@ -1,1 +1,1 @@
-[Попавсь!](t.me/applicative_memes)
+[Попавсь!](https://t.me/applicative_memes)
