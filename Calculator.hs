@@ -2,15 +2,17 @@ module Calculator where
 
 import           Parser
 import           System.IO
+import           Control.Monad.Identity
 import           Data.Char
+import           Data.Functor
 import           Data.Foldable
 import           System.Environment
 
 -- Not going to use any kind of error reporting
-type ExprParser a = ParserC String Maybe Char a
+type ExprParser a = ParserC String Identity Char a
 
 stoi :: String -> Integer
-stoi s = foldl' (\acc c -> acc * 10 + (toInteger . digitToInt) c) 0 s
+stoi = foldl' (\acc c -> acc * 10 + (toInteger . digitToInt) c) 0
 
 skipWS :: ExprParser ()
 skipWS = void $ many $ symbolIs isSpace
@@ -28,7 +30,7 @@ operation
     :: String
     -> (Integer -> Integer -> Integer)
     -> ExprParser (Integer -> Integer -> Integer)
-operation s f = skipWS *> string s *> pure f
+operation s f = skipWS *> string s $> f
 
 -- chain any number of left-associative operations
 -- foldl' (flip ($)) is lifted to act on Parsers
@@ -69,5 +71,6 @@ parseExpr = foldr' ($) atom allOps
 main :: IO ()
 main = do
     (str : _) <- getArgs
-    let Just (res, "") = runParserC (parseExpr <* skipWS <* pEOF) str
+    let Identity l = runParserC (parseExpr <* skipWS <* pEOF) str
+    let ((res,_):_) = filter ((== "") . snd) l
     print res
