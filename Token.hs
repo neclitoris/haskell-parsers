@@ -1,7 +1,8 @@
 {-#
     LANGUAGE
     FunctionalDependencies,
-    FlexibleInstances
+    FlexibleInstances,
+    UndecidableInstances
 #-}
 
 module Token

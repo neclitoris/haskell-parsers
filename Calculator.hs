@@ -9,7 +9,7 @@ import           Data.Foldable
 import           System.Environment
 
 -- Not going to use any kind of error reporting
-type ExprParser a = ParserC String Identity Char a
+type ExprParser a = FParserT Identity String a
 
 stoi :: String -> Integer
 stoi = foldl' (\acc c -> acc * 10 + (toInteger . digitToInt) c) 0
@@ -71,6 +71,5 @@ parseExpr = foldr' ($) atom allOps
 main :: IO ()
 main = do
     (str : _) <- getArgs
-    let Identity l = runParserC (parseExpr <* skipWS <* pEOF) str
-    let ((res,_):_) = filter ((== "") . snd) l
+    let Identity (Just res) = runFParserT (parseExpr <* skipWS <* pEOF) str
     print res
